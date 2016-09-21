@@ -1,0 +1,492 @@
+#!/bin/bash
+# Hackafruit setup and configuration
+# Simplest Vulnerable Web Pentesting Lab setup and conf on Raspberry Pi
+# http://hackafruit.com
+#
+# Install with this command (from your Pi):
+#
+# bash <(curl -s http://install.hackafruit.com)
+
+r=$(( rows / 2 ))
+c=$(( columns / 2 ))
+
+root(){
+if [[ $EUID -eq 0 ]];then
+    echo "[!] You are good to go."
+else
+   echo "[!] Please run this as root"
+   exit
+fi
+}
+logo(){
+cat << "EOF"
+    ..                                                           .         s    
+  .uef^"                          < .z@8"`                     oec :                                @88>      :8    
+:d88E                              !@88E                      @88888     .u    .      x.    .       %8P      .88    
+`888E             u           .    '888E   u          u       8"*88%   .d88B :@8c   .@88k  z88u      .      :888ooo 
+ 888E .z8k     us888u.   .udR88N    888E u@8NL     us888u.    8b.     ="8888f8888r ~"8888 ^8888    .@88u  -*8888888 
+ 888E~?888L .@88 "8888" <888'888k   888E`"88*"  .@88 "8888"  u888888>   4888>'88"    8888  888R   ''888E`   8888    
+ 888E  888E 9888  9888  9888 'Y"    888E .dN.   9888  9888    8888R     4888> '      8888  888R     888E    8888    
+ 888E  888E 9888  9888  9888        888E~8888   9888  9888    8888P     4888>        8888  888R     888E    8888    
+ 888E  888E 9888  9888  9888        888E '888&  9888  9888    *888>    .d888L .+     8888 ,888B .   888E   .8888Lu= 
+ 888E  888E 9888  9888  ?8888u../   888E  9888. 9888  9888    4888     ^"8888*"     "8888Y 8888"    888&   ^%888*   
+m888N= 888> "888*""888"  "8888P'  '"888*" 4888" "888*""888"   '888        "Y"        `Y"   'YP      R888"    'Y"    
+ `Y"   888   ^Y"   ^Y'     "P'       ""    ""    ^Y"   ^Y'     88R                                   ""             
+      J88"            ~Hacking is good~                        88>                                                  
+      @%                                                       48                                                   
+    :"                                                         '8                                                   
+
+
+                                     
+
+ >> Project Repo : https://github.com/hackafruit/hackafruit
+ >> Scripted by  : Namia a.k.a @thehappyclownz
+
+
+EOF
+
+
+}
+welcomeDialogs() {
+    # Display the welcome dialog
+    if(whiptail --backtitle "Welcome" --title "HackaFruit Automated Installer" --yesno "\nThis installer will turn your Raspberry Pi into Vulnerable Web Pentesting Lab.\nThis is for educational purpose only, By clicking yes, you agree to bound with our Terms and Conditions " $r $c)then
+
+	logo
+	echo "Continue setup..."
+	else
+	 exit
+	fi
+    }
+
+
+
+progressfilt ()
+{
+    local flag=false c count cr=$'\r' nl=$'\n'
+    while IFS='' read -d '' -rn 1 c
+    do
+        if $flag
+        then
+            printf '%c' "$c"
+        else
+            if [[ $c != $cr && $c != $nl ]]
+            then
+                count=0
+            else
+                ((count++))
+                if ((count > 1))
+                then
+                    flag=true
+                fi
+            fi
+        fi
+    done
+}
+
+Installdvwa(){
+
+
+echo ""
+echo "############################################"
+echo "!                                          !"
+echo "!      Damn Vulnerable Web App (DVWA)      !"
+echo "!                                          !"
+echo "############################################"
+
+
+
+echo -n  "[!] Create new directory /var/www/html/hackafruit..."
+mkdir -p /var/www/html/hackafruit > /dev/null
+echo  "Done!"
+
+echo -n  "[!] Create new directory /var/www/html/hackafruit/dvwa..."
+mkdir -p /var/www/html/hackafruit/dvwa > /dev/null
+echo  "Done!"
+
+
+echo -n  "[!] Changing to TMP Directory..."
+cd /tmp
+echo "Done!"
+
+echo -n  "[!] Downloading DVWA..."
+wget --progress=bar:force https://github.com/RandomStorm/DVWA/archive/v1.0.8.zip 2>&1 | progressfilt
+echo "Done!"
+
+echo -n  "[!] Unzipping DVWA..."
+unzip v1.0.8.zip > /dev/null
+echo "Done!"
+
+echo -n "[!] Deleting the zip file..."
+rm -rf v1.0.8.zip > /dev/null
+echo "Done!"
+
+echo -n "[!] Copying DVWA to /var/www/html/hackafruit..."
+cp -R DVWA-1.0.8/* /var/www/html/hackafruit/dvwa > /dev/null
+echo "Done!"
+
+echo -n "[!] Clearing TMP Directory..."
+rm -rf DVWA-1.0.8 > /dev/null
+echo "Done!"
+
+echo -n "[!] Enabling Remote include in php.ini..."
+cp /etc/php5/apache2/php.ini /etc/php5/apache2/php.ini1
+sed -e 's/allow_url_include = Off/allow_url_include = On/' /etc/php5/apache2/php.ini1 > /etc/php5/apache2/php.ini
+rm /etc/php5/apache2/php.ini1
+echo "Done!"
+
+echo -n "[!] Enabling write permissions to /var/www/html/hackable/upload..."
+#chmod 777 /var/www/html/hackafruit/dvwa/hackable/uploads/
+chmod 777 /var/www/html/hackafruit/dvwa/
+echo "Done!"
+
+echo -n "[!] Starting Apache Web Server..."
+service apache2 start >> /dev/null 2>&1
+echo "Done!"
+
+echo -n "[!] Starting MySQL..."
+service mysql start >> /dev/null 2>&1
+echo "Done!"
+
+echo -n "[!] Updating Config File..."
+cp /var/www/html/hackafruit/dvwa/config/config.inc.php /var/www/html/hackafruit/dvwa/config/config.inc.php1
+sed -e "s/p@ssw0rd/$pass/g" /var/www/html/hackafruit/dvwa/config/config.inc.php1 > /var/www/html/hackafruit/dvwa/config/config.inc.php
+rm /var/www/html/hackafruit/dvwa/config/config.inc.php1
+echo "Done!"
+
+echo -n "[!] Updating Database..."
+wget --delete-after --post-data="create_db=Create / Reset Database=" http://127.0.0.1/hackafruit/dvwa/setup.php >> /dev/null 2>&1
+mysql -u $uname -p$pass -e 'update dvwa.users set avatar = "/hackable/users/gordonb.jpg" where user = "gordonb";'
+mysql -u $uname -p$pass -e 'update dvwa.users set avatar = "/hackable/users/smithy.jpg" where user = "smithy";'
+mysql -u $uname -p$pass -e 'update dvwa.users set avatar = "/hackable/users/admin.jpg" where user = "admin";'
+mysql -u $uname -p$pass -e 'update dvwa.users set avatar = "/hackable/users/pablo.jpg" where user = "pablo";'
+mysql -u $uname -p$pass -e 'update dvwa.users set avatar = "/hackable/users/1337.jpg" where user = "1337";'
+echo "Done!"
+
+
+
+
+}
+
+InstallXVWA(){
+echo ""
+echo "############################################"
+echo "!                                          !"
+echo "!                   XVWA                   !"
+echo "!                                          !"
+echo "############################################"
+
+echo -n  "[!] Changing to /var/www/html..."
+cd /var/www/html
+echo "Done!"
+
+echo -n  "[!] Downloading XVWA..."
+git clone https://github.com/s4n7h0/xvwa.git xvwa
+echo  "Done!"
+
+echo -n "[!] Updating Config File..."
+sed -i '2 c $XVWA_WEBROOT = "";' /var/www/html/xvwa/config.php
+sed -i '5 c $user = "'$uname'";' /var/www/html/xvwa/config.php
+sed -i '6 c $pass = "'$pass'";' /var/www/html/xvwa/config.php
+echo  "Done!"
+
+echo -n "[!] Create Database..."
+mysql -u $uname -p$pass -e "CREATE DATABASE IF NOT EXISTS xvwa"
+wget --delete-after http://127.0.0.1/xvwa/setup/?action=do >> /dev/null 2>&1
+echo  "Done!"
+
+echo "[!] XVWA installing process complete!"
+}
+
+
+
+
+InstallMutillidaeII(){
+echo ""
+echo "############################################"
+echo "!                                          !"
+echo "!          OWASP Mutillidae II             !"
+echo "!                                          !"
+echo "############################################"
+
+echo -n  "[!] Changing to /var/www/html/hackafruit..."
+cd /var/www/html/hackafruit
+echo "Done!"
+
+echo -n  "[!] Downloading Mutillidae II..."
+git clone git://git.code.sf.net/p/mutillidae/git mutillidae
+echo  "Done!"
+
+
+echo -n "[!] Updating Config File..."
+sed -i '39 c static public $mMySQLDatabasePassword = "'$pass'";' /var/www/html/hackafruit/mutillidae/classes/MySQLHandler.php
+echo  "Done!"
+
+echo -n "[!] Create Database..."
+wget --delete-after http://127.0.0.1/hackafruit/mutillidae/set-up-database.php >> /dev/null 2>&1
+echo  "Done!"
+
+echo "[!] OWASP Mutillidae II installing process complete!"
+}
+
+InstallHackademic(){
+echo ""
+echo "############################################"
+echo "!                                          !"
+echo "!       OWASP Hackademic Challenges        !"
+echo "!                                          !"
+echo "############################################"
+
+echo -n  "[!] Create new directory /var/www/html/hackafruit..."
+mkdir -p /var/www/html/hackafruit > /dev/null
+echo  "Done!"
+
+echo -n  "[!] Changing to /var/www/html/hackafruit..."
+cd /var/www/html/hackafruit
+echo "Done!"
+
+echo -n  "[!] Downloading Hackademic..."
+git clone https://github.com/Hackademic/hackademic.git
+echo  "Done!"
+
+echo -n "[!] Changing directory permission /var/www/html/hackafruit/hackademic..."
+chmod 777 /var/www/html/hackafruit/hackademic
+chown www-data:www-data hackademic -R
+echo "Done!"
+
+echo -n "[!] Updating Config File..."
+sed -i '79 c } if ($user->is_activated != 1 && 1 == 2){' /var/www/html/hackafruit/hackademic/controller/class.LoginController.php
+echo  "Done!"
+
+echo "[!] OWASP Hackademic Challenges installing process complete!"
+}
+
+InstallMark(){
+echo ""
+echo "############################################"
+echo "!                                          !"
+echo "!         Marks-Pentest-Challenge          !"
+echo "!                                          !"
+echo "############################################"
+
+echo -n  "[!] Changing to directory /var/www/html/hackafruit..."
+cd /var/www/html/hackafruit
+echo "Done!"
+
+echo -n  "[!] Downloading Marks-Pentest-Challenge..."
+sudo git clone https://github.com/markszabo/Marks-Pentest-Challenge.git Marks
+echo  "Done!"
+
+echo "[!] Marks-Pentest-Challenge installing process complete!"
+
+}
+
+if [ "$1" == "-hc" ]; then
+  root
+  logo
+  echo "[!] Solving the problem..."
+  echo ""
+  sed -i '9 c $ip=$_SERVER['SERVER_ADDR'];' /var/www/html/hackafruit/hackademic/config.inc.php
+  sed -i '18 c define('SOURCE_ROOT_PATH', "http://$ip/hackafruit/hackademic/");' /var/www/html/hackafruit/hackademic/config.inc.php
+  echo "[!] Done!"
+  exit 0
+fi
+
+if [ "$1" == "-h" ]; then
+
+  logo
+  echo "Hackafruit v1.0 for Raspberry Pi 19-9-2016"
+  echo ""
+  echo "Usage: hackafruit.sh <command> [option]"
+  echo ""
+  echo "Options:"
+  echo " -h, help           Display this help and exit."
+  echo " -u, uninstall      Uninstall Hackafruit by deleting all apps and databases."
+  echo " -hc                Solve issue in Hackademic regarding IP."
+  echo ""
+  exit 0
+fi
+
+
+
+if [ "$1" == "-u" ]; then
+root
+logo
+echo -n "Do you want to uninstall Hackafruit with all the databases and applications from your system (Y/N)?"
+read uninstall_flag
+if [ $uninstall_flag == "Y" ] || [ $uninstall_flag == "y" ]; then
+                echo -n "Enter mysql password : "
+                read -s pass
+		
+                echo ""
+                echo "Remove all the databases and applications from your system. This might take a while."
+
+                rm -rf /var/www/html/hackafruit/
+                rm -rf /var/www/html/xvwa/
+                mysql -u root -p$pass -e "DROP DATABASE IF EXISTS xvwa"
+                mysql -u root -p$pass -e "DROP DATABASE IF EXISTS dvwa"
+                mysql -u root -p$pass -e "DROP DATABASE IF EXISTS nowasp"
+                mysql -u root -p$pass -e "DROP DATABASE IF EXISTS hackademic"
+                echo "The uninstall process has been successfull"
+                exit 0
+		
+	else
+
+		echo "The uninstall process has been terminated"
+		exit 0
+	fi
+
+
+fi
+Checking(){
+
+
+
+isMYSQL=$(apt-cache show mysql-server | grep 'Version');
+if which mysql ; then
+
+echo  "MySQL found with "$isMYSQL
+else
+
+echo -n "MySQL Package Not Found. Do you want to install (Y/N)?"
+	read mysql_flag
+	if [ $mysql_flag == "Y" ] || [ $mysql_flag == "y" ]; then
+		echo "Installing MySQL Server. This might take a while."
+		sudo apt-get install mysql-server php5-mysql -y
+	else
+		echo "Hackafruit Setup Terminated. MySQL is a must requirement for Hackafruit to run"
+		exit 0
+	fi
+
+fi
+
+
+isApache=$(apt-cache show apache2 | grep 'Version');
+if which apache2; then
+
+echo "Apache found with "$isApache
+else
+
+     echo -n "Apache Package Not Found. Do you want to install (Y/N)?"
+	read apache_flag
+	if [ $apache_flag == "Y" ] || [ $apache_flag == "y" ]; then
+		echo "Installing Apache. This might take a while."
+		sudo apt-get install apache2 -y
+	else
+		echo "Hackafruit Setup Terminated. Apache is a must requirement for Hackafruit to run"
+		exit 0
+	fi
+	
+
+fi
+
+isPHP=$(apt-cache show php5 | grep 'Version');
+if which php5; then
+
+echo "PHP5 found with "$isPHP
+else
+
+     echo -n "PHP Package Not Found. Do you want to install (Y/N)?"
+	read php_flag
+	if [ $php_flag == "Y" ] || [ $php_flag == "y" ]; then
+		echo "Installing PHP 5. This might take a while."
+		sudo apt-get install php5 libapache2-mod-php5 -y
+                sudo apt-get install php5-curl php-pear php5-gd -y
+	else
+		echo "Hackafruit Setup Terminated. PHP is a must requirement for Hackafruit to run"
+		exit 0
+	fi
+	
+
+fi
+
+
+isGit=$(apt-cache show git | grep 'Version');
+if which git; then
+
+echo "Git found with "$isGit
+else
+
+     sudo apt-get install git -y
+	
+
+fi
+
+isZip=$(apt-cache show unzip | grep 'Version');
+if which unzip; then
+
+echo "Unzip found with "$isZip
+else
+
+     sudo apt-get install unzip -y
+	
+
+fi
+
+
+
+
+echo -n "Enter mysql username : "
+read uname
+echo -n "Enter mysql password : "
+read -s pass
+
+}
+
+InstallCore(){
+echo ""
+echo "############################################"
+echo "!                                          !"
+echo "!           Hackafruit Web Core            !"
+echo "!                                          !"
+echo "############################################"
+
+echo -n  "[!] Create new directory /var/www/html/hackafruit/core..."
+mkdir -p /var/www/html/hackafruit/core > /dev/null
+echo  "Done!"
+
+echo -n  "[!] Changing to TMP Directory..."
+cd /tmp
+echo "Done!"
+
+echo -n  "[!] Downloading Hackafruit Web Core..."
+wget --progress=bar:force https://github.com/hackafruit/hackafruit/raw/Archive/core_v1.0.zip 2>&1 | progressfilt
+echo  "Done!"
+
+
+echo -n  "[!] Unzipping Core..."
+unzip core_v1.0.zip -d core1 > /dev/null
+echo "Done!"
+
+echo -n "[!] Deleting the zip file..."
+rm -rf core_v1.0.zip > /dev/null
+echo "Done!"
+
+echo -n "[!] Copying core to /var/www/html/hackafruit/core..."
+cp -R core1/* /var/www/html/hackafruit/core > /dev/null
+echo "Done!"
+
+echo -n "[!] Clearing TMP Directory..."
+rm -rf core1 > /dev/null
+echo "Done!"
+
+
+}
+
+
+ 
+######## SCRIPT ############
+#Start the installer comment # for application that doesn't want to be install.
+root
+welcomeDialogs
+Checking
+Installdvwa
+InstallXVWA                                               
+InstallMutillidaeII
+InstallHackademic
+InstallMark
+InstallCore
+
+echo "[!] Hackafruit Installation Complete!"
+echo "[!] Starting Firefox to Hackafruit Web Core"
+firefox http://127.0.0.1/hackafruit/core/ &> /dev/null &
+echo "Done!"
